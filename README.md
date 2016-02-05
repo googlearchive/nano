@@ -54,7 +54,7 @@ Use the Web Platform, embrace the DOM, avoid abstracting the surface or using as
 ### Maintenance Cost Cutting
 
 - KISS
-a- Be nimble
+- Be nimble
 - Be expressive
 - Be readable
 - Be robust
