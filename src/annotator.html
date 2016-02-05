@@ -1,0 +1,55 @@
+<script>
+
+  Annotator = function(cb) {
+    this.cb = cb;
+  };
+
+  Annotator.prototype = {
+    
+    annotate: function(node) {
+      var root = Object.create(null);
+      root.luid = 0;
+      root.locators = [];
+      this.annotateSubtree(node, {}, root);
+      return root;
+    },
+    
+    annotateSubtree: function(node, locator, root) {
+      var child = node.firstChild;
+      if (child) {
+        var i=0, previous=null;
+        while (child) {
+          this.annotateNode(child, locator, i++, root);
+          // subtree may have been modified by annotator
+          previous = previous ? previous.nextSibling : node.firstChild;
+          child = (previous === child) ? previous.nextSibling : previous;
+        }
+      }
+    },
+
+    annotateNode: function(node, locator, index, root) {
+      var subtree = {parent: locator, index: index};
+      this.cb(node, subtree, root);
+      this.annotateSubtree(node, subtree, root);
+    },    
+    
+    getUid: function(node, locator, root) {
+      var luid = node._luid;
+      if (!luid) {
+        luid = node._luid = ++root.luid;
+      }
+      root.locators[luid] = locator;
+      return luid;
+    },
+    
+    findInstanceNode: function(root, uid, container) {
+      return this._findInstanceNode(root.locators[uid], container);
+    },
+    
+    _findInstanceNode: function(locator, container) {
+      return !locator.parent ? container : this._findInstanceNode(locator.parent, container).childNodes[locator.index];
+    }
+    
+  };
+  
+</script>

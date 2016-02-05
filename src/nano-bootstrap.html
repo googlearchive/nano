@@ -1,0 +1,36 @@
+<script>
+  'uses strict';
+  (function() {
+  
+    var domModule = document.createElement('dom-module');
+    var templates = {};
+
+    Nano.templateFor = function(template, slctr) {
+      if (typeof template === 'string') {
+        var name = template;
+        template = templates[name];
+        if (!template) {
+          template = domModule.import(name, slctr || 'template');
+        }
+        if (!template) {
+          throw 'template import failed for dom-module #' + name;
+        }
+        templates[name] = template;
+      }
+      return template;
+    };
+
+    var annotations = window.Annotations;
+    delete window.Annotations;
+
+    Nano.annotations = annotations;   
+    Nano.prepare = function(templateOrName) {
+      return annotations.prepare(Nano.templateFor(templateOrName))
+    };
+    Nano.translate = annotations.translate;
+    annotations.translate = function() {
+      return Nano.translate.apply(Nano, arguments);
+    };
+    
+  })();
+</script>

@@ -1,0 +1,78 @@
+<script>
+  Object.defineProperty(document, 'currentImport', {
+    enumerable: true,
+    configurable: true,
+    get: function() {
+      return (document._currentScript || document.currentScript).ownerDocument;
+    }
+  });
+  
+  window.Nano = {
+    acquire: function(element/*, name, ...*/) {
+      for (var i=1; i<arguments.length; i++) {
+        this.property(element, arguments[i]);
+      }
+    },
+    property: function(element, name) {
+      var value;
+      if (element.hasOwnProperty(name)) {
+        value = element[name];
+        delete element[name];
+      } else if (!element.hasAttribute(name)) {
+        return;
+      } else {
+        value = element.getAttribute(name);
+      }
+      element[name] = value;
+    },
+    boolAttribute: function(node, attr, state) {
+      if (state === undefined) {
+        state = !node.hasAttribute(attr);
+      }
+      node[state ? 'setAttribute' : 'removeAttribute'](attr, '');
+    },
+    create: function(tag, props) {
+      var elt = document.createElement(tag, props.is || '');
+      if (props) {
+        for (var n in props) {
+          var v = props[n];
+          if (n[0] === '@') {
+            elt.addEventListener(n.slice(1), v);
+          } else if (n[0] === '$') {
+            elt.setAttribute(n.slice(1), v);
+          } else {
+            elt[n] = v;
+          }
+        }
+      }
+      return elt;
+    },
+    // TODO(sjmiles): should use Annotations
+    pool: function(element) {
+      var pool = [];
+      var c$ = element.children;
+      for (var i=0, c; i<c$.length; i++) {
+        c = c$[i];
+        pool.push(c);
+        c.remove();
+      }
+      return pool;
+    },
+    distribute: function(pool, dom) {
+      for (var i=0, child; child=pool[i]; i++) {
+        this.distributeNode(child, dom);
+      }
+    },
+    distributeNode: function(child, dom) {
+      var name = child.getAttribute('slot');
+      if (name) {
+        var slot = dom.querySelector('slot[name=' + name + ']');
+        if (slot) {
+          slot.parentNode.replaceChild(child, slot);
+          return;
+        }
+      }
+      child.remove();
+    }
+  };
+</script>

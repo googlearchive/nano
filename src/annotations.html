@@ -1,0 +1,187 @@
+<script>
+(function() {
+  
+  var Annotations = {};
+
+  Annotations.translate = function(n) {
+    return n;
+  };
+
+  Annotations.prepare = function(template) {
+    // notate (or use memoized notations)
+    var notes = template._notes;
+    if (!notes) {
+      notes = template._notes = annotator.annotate(template.content);
+      //console.log('annotations:', notes);
+    }
+    var subtree = document.importNode(template.content, true);
+    // perform translations (could be memoized)
+    xlate(subtree, notes);
+    // install into dom
+    // TODO(sjmiles): if we install to DOM before returning the controller, 
+    // it's hard to implement event-listeners that utilize controller.
+    // We could avoid listening until after installation, but
+    // we are already ignoring events fired as part of 'createdCallback',
+    // if we delay further we will miss 'attachedCallback' also.
+    // This conundrum forces us into a two-stage stamping process.
+    // marshal controller
+    return {
+      stamp: function(container, listener) {
+        this.$ = function(slctr) {
+          return container.querySelector(slctr);
+        };
+        // marshal binding helper
+        this.set = function(name, value) {
+          set(container, notes, name, value);
+          return this;
+        };
+        // attach listeners
+        listen(subtree, notes, listener || container);
+        // TODO(sjmiles): container must be empty for node-marshaling to work after
+        // transplanting nodes. One alternative is to marshal nodes greedily. Another
+        // is to capture a 'root offset' to locate the inserted subtree.
+        container.textContent = '';
+        container.appendChild(subtree);
+        return this;
+      }
+    };
+  };
+  
+  var set = function(container, notes, name, value) {
+    if (value === undefined) {
+      updateManyBindings(container, notes, name)
+    } else {
+      updateBindings(container, notes, name, value)
+    }
+  };
+
+  var updateManyBindings = function(container, notes, values) {
+    for (var n in values) {
+      updateBindings(container, notes, n, values[n])    
+    }
+  };
+
+  var updateBindings = function(container, notes, name, value) {
+    if (value === null || value === undefined) {
+      value = '';
+    } else if (name[0] === '$') {
+      value = Annotations.translate(value);
+    }
+    doForBindings(container, notes, notes.mustaches, name, function(b, node) {
+      if (b.property === 'style%') {
+        var s = node.style;
+        for (var n in value) {
+          s[n] = value[n];
+        }
+      } else {
+        node[b.property] = value;
+      }
+    });
+  };
+
+  var doForBindings = function(container, root, notes, prop, cb) {
+    var b$ = notes && notes[prop];
+    b$ && b$.forEach(function(b) {
+      cb(b, findInstanceNode(root, b.uid, container));
+    });
+  };
+
+
+  var listen = function(container, notes, host) {
+    // add listeners as described in notes
+    doForBindings(container, notes, notes, 'events', function(e, node) {
+      _listen(node, e.name, host, e.handler);
+    });
+  };
+
+  var _listen = function(node, name, host, handler) {
+    node.addEventListener(name, function(e) { 
+      if (!host[handler]) {
+        //console.warn('handler `' + handler + '` for event `' + name + '` not defined on host `' + (host && host.localName) + '`');
+      } else {
+        host[handler](e);
+      }
+    });
+  };
+
+  var xlate = function(container, notes) {
+    for (var n in notes.xlate) {
+      updateBindings(container, notes, n, n.slice(1));
+    }
+  };
+  
+  var findInstanceNode = function(root, uid, container) {
+    if (!container._nodes) {
+      container._nodes = [];
+    }
+    var node = container._nodes[uid];
+    if (!node) {
+      node = annotator.findInstanceNode(root, uid, container);
+      container._nodes[uid] = node;
+    }
+    return node;
+  };
+    
+  /* annotator */
+  
+  var annotatorImpl = function(node, locator, root) {
+    switch (node.nodeType) {
+      case Node.DOCUMENT_FRAGMENT_NODE:
+        return;
+      case Node.ELEMENT_NODE:
+        return annotateElementNode(node, locator, root);
+      case Node.TEXT_NODE:
+        return annotateTextNode(node, locator, root);
+    }
+  };
+
+  var annotateTextNode = function(node, locator, root) {
+    if (annotateMustache(node, 'textContent', node.textContent, locator, root)) {
+      node.textContent = '';
+    }
+  };
+  
+  var annotateElementNode = function(node, locator, root) {
+    if (node.hasAttributes()) {
+      //console.group(node.localName, node.id || '');
+      for (var a$=node.attributes, i=a$.length-1, a, obj; i>=0 && (a=a$[i]); i--) {
+        if (annotateMustache(node, a.name, a.value, locator, root)) {} 
+        else if (annotateEvent(node, a.name, a.value, locator, root)) {} 
+        else continue;
+        node.removeAttribute(a.name);
+      }
+      //console.groupEnd();
+    }
+  };
+
+  var annotateMustache = function(node, property, value, locator, root) {
+    if (value.slice(0,2) === '{{') {
+      var p = value.slice(2, -2);
+      takeNote(root, 'mustaches', p, {property: property, uid: annotator.getUid(node, locator, root)});
+      if (p[0] === '$') {
+        takeNote(root, 'xlate', p, true);
+      }
+      return true;
+    }
+  };
+
+  var takeNote = function(root, group, name, note) {
+    //console.log('%s.{{%s}}:', group, name, note);
+    var a$ = root[group] || (root[group] = {});
+    var a = a$[name] || (a$[name] = []);
+    a.push(note);
+  };
+
+  var annotateEvent = function(node, name, value, locator, root) {
+    if (name.slice(0, 3) === 'on-') {
+      var e$ = root.events || (root.events = []);
+      e$.push({name: name.slice(3), handler: value, uid: annotator.getUid(node, locator, root)});
+    }
+  };
+
+  var annotator = new Annotator(annotatorImpl);
+
+  window.Annotations = Annotations;
+  
+})();
+</script>
