@@ -59,7 +59,7 @@ Use the Web Platform, embrace the DOM, avoid abstracting the surface or using as
 - Be readable
 - Be robust
 
-## People Can't Know What They Want Until They Have What They Need
+## Can't Know What I Want Until I Have What I Need
 
 #### Platformophilia Can Satisfy Needs
 
@@ -67,7 +67,7 @@ Custom Elements exposes DOM's fundamental power as a component-model. Component 
 
 #### Interoperability Will Fulfill Wants
 
-Once _making it work_ is less of a burden, it's easier to grasp the importance of the deep interoperability afforded by Shadow DOM and css-scoping. At that time the large-scale sharing afforded by the pure element interface will be attractive (i.e. no special distribution rules, etc).
+Once _making scoping work_ is less of a burden, it'll be easier to grasp the usefulness of the deep interoperability afforded by Shadow DOM. At that time the large-scale sharing afforded by the pure element interface will be attractive.
 
 
 
