@@ -10,10 +10,12 @@
         var name = template;
         template = templates[name];
         if (!template) {
-          template = domModule.import(name, slctr || 'template');
-        }
-        if (!template) {
-          throw 'template import failed for dom-module #' + name;
+          if (domModule.import) {
+            template = domModule.import(name, slctr || 'template');
+          }
+          if (!template) {
+            throw 'template import failed for dom-module #' + name;
+          }
         }
         templates[name] = template;
       }
