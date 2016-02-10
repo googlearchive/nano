@@ -1,3 +1,4 @@
+<dom-module id="nano">
 <script>
   Object.defineProperty(document, 'currentImport', {
     enumerable: true,
@@ -32,12 +33,14 @@
       node[state ? 'setAttribute' : 'removeAttribute'](attr, '');
     },
     create: function(tag, props) {
-      var elt = document.createElement(tag, props.is || '');
+      var elt = document.createElement(tag, props && props.is || '');
       if (props) {
         for (var n in props) {
           var v = props[n];
           if (n[0] === '@') {
             elt.addEventListener(n.slice(1), v);
+          } else if (n.slice(0, 3) === 'on-') {
+            elt.addEventListener(n.slice(3), v);
           } else if (n[0] === '$') {
             elt.setAttribute(n.slice(1), v);
           } else {
@@ -76,3 +79,4 @@
     }
   };
 </script>
+</dom-module>
