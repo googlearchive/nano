@@ -2,10 +2,10 @@
   'uses strict';
   (function() {
 
-    var domModule = document.createElement('dom-module');
     var templates = {};
-
-    Nano.templateFor = function(template, slctr) {
+    
+    var domModule = document.createElement('dom-module');
+    var findModuleTemplate = function(template, slctr) {
       if (typeof template === 'string') {
         var name = template;
         template = templates[name];
@@ -14,10 +14,18 @@
             template = domModule.import(name, slctr || 'template');
           }
           if (!template) {
-            throw 'template import failed for dom-module #' + name;
+            return;
           }
         }
         templates[name] = template;
+      }
+      return template;
+    };
+
+    Nano.templateFor = function(template, slctr) {
+      var template = findModuleTemplate(template, slctr);
+      if (!template) {
+        throw 'template import failed for dom-module #' + name;
       }
       return template;
     };
@@ -37,7 +45,8 @@
     Nano.createDomFactory = function() {
       var currentImport = document.currentScript.ownerDocument;
       return function(context, slctr) {
-        var template = Nano.templateFor(context.localName) || currentImport.querySelector(slctr || 'template');
+        slctr = slctr || 'template';
+        var template = findModuleTemplate(context.localName, slctr) || currentImport.querySelector(slctr);
         var agent = Nano.prepare(template);
         var stamp = agent.stamp;
         agent.stamp = function() { return stamp.call(agent, context); };
