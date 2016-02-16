@@ -4,12 +4,16 @@
 
     var templates = {};
     
-    var domModule = document.createElement('dom-module');
+    var domModule;
     var findModuleTemplate = function(template, slctr) {
       if (typeof template === 'string') {
         var name = template;
         template = templates[name];
         if (!template) {
+          if (!domModule) {
+            // important to do this lazily, unconnected element won't upgrade under polyfills
+            domModule = document.createElement('dom-module');
+          }
           if (domModule.import) {
             template = domModule.import(name, slctr || 'template');
           }
@@ -22,10 +26,19 @@
       return template;
     };
 
+    var createDomAgent = function(module, context, slctr) {
+      slctr = slctr || 'template';
+      var template = findModuleTemplate(context.localName, slctr) || module.querySelector(slctr);
+      var agent = Nano.prepare(template);
+      var stamp = agent.stamp;
+      agent.stamp = function() { return stamp.call(agent, context); };
+      return agent;
+    };
+    
     Nano.templateFor = function(template, slctr) {
       var template = findModuleTemplate(template, slctr);
       if (!template) {
-        throw 'template import failed for dom-module #' + name;
+        throw 'template import failed for dom-module #' + template;
       }
       return template;
     };
@@ -43,15 +56,14 @@
     };
 
     Nano.createDomFactory = function() {
-      var currentImport = document.currentScript.ownerDocument;
+      var module = document.currentScript.ownerDocument;
       return function(context, slctr) {
-        slctr = slctr || 'template';
-        var template = findModuleTemplate(context.localName, slctr) || currentImport.querySelector(slctr);
-        var agent = Nano.prepare(template);
-        var stamp = agent.stamp;
-        agent.stamp = function() { return stamp.call(agent, context); };
-        return agent
+        return createDomAgent(module, context, slctr);
       };
+    };
+    
+    Nano.createDom = function(class_, instance, slctr) {
+      return createDomAgent(class_.module, instance, slctr);
     };
 
   })();

@@ -8,6 +8,14 @@
     }
   });
   
+  (function() {
+    var re = document.registerElement.bind(document);
+    document.registerElement = function(name, class_) {
+      class_.module = document.currentImport;
+      return re(name, class_);
+    };
+  })();
+
   window.Nano = {
     acquire: function(element/*, name, ...*/) {
       for (var i=1; i<arguments.length; i++) {
