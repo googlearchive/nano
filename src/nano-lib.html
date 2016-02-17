@@ -58,32 +58,36 @@
       }
       return elt;
     },
+    import: function(href, cb) {
+      document.body.appendChild(Nano.create('link', {
+        rel: 'import', 
+        href: href, 
+        'on-load': function(e) { cb(null, e) }, 
+        'on-error': function(e) { cb(e, null) }
+      }));
+    },
     // TODO(sjmiles): should use Annotations
     pool: function(element) {
       var pool = [];
-      var c$ = element.children;
-      for (var i=0, c; i<c$.length; i++) {
-        c = c$[i];
-        pool.push(c);
-        c.remove();
+      while (element.firstElementChild) {
+        pool.push(element.removeChild(element.firstElementChild));
       }
       return pool;
     },
     distribute: function(pool, dom) {
       for (var i=0, child; child=pool[i]; i++) {
-        this.distributeNode(child, dom);
+        this._distributeNode(child, dom);
       }
     },
-    distributeNode: function(child, dom) {
+    _distributeNode: function(child, dom) {
       var name = child.getAttribute('slot');
-      if (name) {
-        var slot = dom.querySelector('slot[name=' + name + ']');
-        if (slot) {
-          slot.parentNode.replaceChild(child, slot);
-          return;
-        }
+      var slctr = name ? 'slot[name=' + name + ']' : 'slot';
+      var slot = dom.querySelector(slctr);
+      if (slot) {
+        slot.parentNode.insertBefore(child, slot);
+      } else {
+        child.remove();
       }
-      child.remove();
     }
   };
 </script>
