@@ -7,7 +7,7 @@
       return (document._currentScript || document.currentScript).ownerDocument;
     }
   });
-  
+
   (function() {
     var re = document.registerElement.bind(document);
     document.registerElement = function(name, class_) {
@@ -16,6 +16,7 @@
     };
   })();
 
+  /*global Nano*/
   window.Nano = {
     acquire: function(element/*, name, ...*/) {
       for (var i=1; i<arguments.length; i++) {
@@ -60,10 +61,10 @@
     },
     import: function(href, cb) {
       document.body.appendChild(Nano.create('link', {
-        rel: 'import', 
-        href: href, 
-        'on-load': function(e) { cb(null, e) }, 
-        'on-error': function(e) { cb(e, null) }
+        rel: 'import',
+        href: href,
+        'on-load': function(e) { cb && cb(null, e) },
+        'on-error': function(e) { cb && cb(e, null) }
       }));
     },
     // TODO(sjmiles): should use Annotations
@@ -75,7 +76,7 @@
       return pool;
     },
     distribute: function(pool, dom) {
-      for (var i=0, child; child=pool[i]; i++) {
+      for (var i=0, child; (child=pool[i]); i++) {
         this._distributeNode(child, dom);
       }
     },

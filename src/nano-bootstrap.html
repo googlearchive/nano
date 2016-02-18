@@ -3,7 +3,7 @@
   (function() {
 
     var templates = {};
-    
+
     var domModule;
     var findModuleTemplate = function(template, slctr) {
       if (typeof template === 'string') {
@@ -29,12 +29,15 @@
     var createDomAgent = function(module, context, slctr) {
       slctr = slctr || 'template';
       var template = findModuleTemplate(context.localName, slctr) || module.querySelector(slctr);
-      var agent = Nano.prepare(template);
+      if (!template) {
+        throw 'template import failed for dom-module #' + context.localName;
+      }
+      var agent = annotations.prepare(template);
       var stamp = agent.stamp;
       agent.stamp = function() { return stamp.call(agent, context); };
       return agent;
     };
-    
+
     Nano.templateFor = function(template, slctr) {
       var template = findModuleTemplate(template, slctr);
       if (!template) {
@@ -46,7 +49,7 @@
     var annotations = window.Annotations;
     delete window.Annotations;
 
-    Nano.annotations = annotations;   
+    Nano.annotations = annotations;
     Nano.prepare = function(templateOrName) {
       return annotations.prepare(Nano.templateFor(templateOrName))
     };
@@ -61,11 +64,10 @@
         return createDomAgent(module, context, slctr);
       };
     };
-    
+
     Nano.createDom = function(class_, instance, slctr) {
       return createDomAgent(class_.module, instance, slctr);
     };
 
   })();
 </script>
-  
